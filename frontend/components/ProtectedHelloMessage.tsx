@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetHelloQuery } from "@/lib/services/api";
+import { useGetHelloQuery } from "@/lib/services/api"; // Adjust path if needed
 
 export default function ProtectedHelloMessage() {
   const { data: helloMessage, isLoading, isError, error } = useGetHelloQuery();
@@ -19,7 +19,9 @@ export default function ProtectedHelloMessage() {
     return (
       <div className="mt-4 rounded border border-red-300 bg-red-100 p-4">
         <p className="font-bold text-red-800">Error loading message:</p>
-        <pre className="text-sm">{JSON.stringify(error, null, 2)}</pre>
+        <pre className="text-sm text-black">
+          {JSON.stringify(error, null, 2)}
+        </pre>
       </div>
     );
   }

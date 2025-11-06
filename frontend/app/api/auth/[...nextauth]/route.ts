@@ -2,14 +2,50 @@ import NextAuth, { AuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
-/**
- * This is the core logic for next-auth.
- * We are configuring it to use the Keycloak provider.
- *
- * We also add callbacks to ensure that the Keycloak `access_token`
- * is passed to the client-side session. This is VITAL for
- * calling your Spring Boot API later.
- */
+async function refreshAccessToken(token: JWT): Promise<JWT> {
+  try {
+    if (!token.refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    // Your Keycloak token endpoint
+    const url = `${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: process.env.KEYCLOAK_CLIENT_ID!,
+        client_secret: process.env.KEYCLOAK_CLIENT_SECRET!,
+        refresh_token: token.refreshToken as string,
+      }),
+    });
+
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        `Token refresh failed: ${refreshedTokens.error_description}`,
+      );
+    }
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      accessTokenExpires: Date.now() + (refreshedTokens.expires_in - 15) * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+    };
+  } catch (error) {
+    console.error("Error refreshing access token", error);
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -17,33 +53,39 @@ export const authOptions: AuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
+
+      authorization: {
+        params: {
+          scope: "openid profile email offline_access",
+        },
+      },
     }),
   ],
 
   callbacks: {
-    /**
-     * @param  {object}  token     Decrypted JSON Web Token
-     * @param  {object}  account   Provider account (e.g., Keycloak)
-     * @return {object}            Decrypted JSON Web Token
-     */
     async jwt({ token, account }) {
-      // On the initial sign-in, persist the access token to the JWT
       if (account) {
         token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token; // This will now exist
+
+        // Set expiry time (account.expires_at is in seconds)
+        if (account.expires_at) {
+          token.accessTokenExpires = (account.expires_at - 15) * 1000;
+        }
+        return token;
       }
-      return token;
+
+      if (Date.now() < (token.accessTokenExpires as number)) {
+        return token;
+      }
+
+      console.log("Access token expired. Refreshing...");
+      return await refreshAccessToken(token);
     },
 
-    /**
-     * @param  {object}  session   Session object
-     * @param  {object}  token     Decrypted JSON Web Token
-     * @return {object}            Session object (what the client-side sees)
-     */
     async session({ session, token }) {
-      // Add the access token to the client-side session
-      // We cast the session and token to `any` to avoid type errors
-      // when adding custom properties.
-      (session as any).accessToken = (token as any).accessToken;
+      (session as any).accessToken = token.accessToken;
+      (session as any).error = token.error;
       return session;
     },
   },

@@ -24,6 +24,7 @@ export default function Home() {
         <pre className="mb-6 rounded container mx-auto p-4 text-left text-sm">
           <code>{JSON.stringify(session, null, 2)}</code>
         </pre>
+        <a href="/posts">protected hello message</a>
         <button
           onClick={() => signOut()}
           className="rounded-lg bg-red-500 px-6 py-2 font-bold text-white transition-all hover:bg-red-600"
