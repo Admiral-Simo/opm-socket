@@ -1,4 +1,5 @@
 import ReduxProvider from "../lib/ReduxProvider";
+import AuthProvider from "./AuthProvider";
 import "./globals.css";
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
         data-new-gr-c-s-check-loaded="14.1261.0"
         data-gr-ext-installed=""
       >
-        <ReduxProvider>{children}</ReduxProvider>
+        <AuthProvider>
+          <ReduxProvider>{children}</ReduxProvider>
+        </AuthProvider>
       </body>
     </html>
   );
