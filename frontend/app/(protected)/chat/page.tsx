@@ -1,25 +1,37 @@
 "use client";
 
-import ProtectedHelloMessage from "@/components/ProtectedHelloMessage"; // Adjust path
-import { useSession, signOut } from "next-auth/react";
+import { useGetHelloQuery } from "@/lib/services/api";
 
-export default function ChatPage() {
-  const { data: session } = useSession();
+export default function ProtectedHelloMessage() {
+  const { data: helloMessage, isLoading, isError, error } = useGetHelloQuery();
+
+  if (isLoading) {
+    return (
+      <div className="mt-4 rounded border border-blue-700 bg-blue-900 p-4">
+        <p className="font-bold text-blue-200">
+          Loading protected message from Spring Boot...
+        </p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="mt-4 rounded border border-red-700 bg-red-900 p-4">
+        <p className="font-bold text-red-200">Error loading message:</p>
+        <pre className="text-sm text-red-100">
+          {JSON.stringify(error, null, 2)}
+        </pre>
+      </div>
+    );
+  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
-      <h1 className="mb-4 text-4xl font-bold">
-        Welcome to the Chat, {session?.user?.name}
-      </h1>
-
-      <button
-        onClick={() => signOut()}
-        className="rounded-lg bg-red-500 px-6 py-2 font-bold text-white transition-all hover:bg-red-600"
-      >
-        Sign Out
-      </button>
-
-      <ProtectedHelloMessage />
-    </main>
+    <div className="mt-4 rounded border border-green-700 bg-green-900 p-4">
+      <p className="font-bold text-green-200">
+        Success! Message from Spring Boot:
+      </p>
+      <p className="text-gray-300">{helloMessage}</p>
+    </div>
   );
 }

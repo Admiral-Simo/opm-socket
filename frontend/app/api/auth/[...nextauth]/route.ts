@@ -8,7 +8,6 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       throw new Error("No refresh token available");
     }
 
-    // Your Keycloak token endpoint
     const url = `${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`;
 
     const response = await fetch(url, {
@@ -53,7 +52,6 @@ export const authOptions: AuthOptions = {
       clientId: process.env.KEYCLOAK_CLIENT_ID!,
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
       issuer: process.env.KEYCLOAK_ISSUER!,
-
       authorization: {
         params: {
           scope: "openid profile email offline_access",
@@ -63,12 +61,33 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
+      const urlObject = new URL(url);
+      const baseUrlObject = new URL(baseUrl);
+
+      if (
+        urlObject.origin === baseUrlObject.origin &&
+        urlObject.pathname === baseUrlObject.pathname
+      ) {
+        return `${baseUrl}/chat`;
+      }
+
+      if (urlObject.origin === baseUrlObject.origin) {
+        return url;
+      }
+
+      return baseUrl;
+    },
+    // ------------------------------------
+
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token; // This will now exist
-
-        // Set expiry time (account.expires_at is in seconds)
+        token.refreshToken = account.refresh_token;
         if (account.expires_at) {
           token.accessTokenExpires = (account.expires_at - 15) * 1000;
         }
@@ -79,7 +98,10 @@ export const authOptions: AuthOptions = {
         return token;
       }
 
-      console.log("Access token expired. Refreshing...");
+      if (!token.refreshToken) {
+        return { ...token, error: "RefreshAccessTokenError" };
+      }
+
       return await refreshAccessToken(token);
     },
 
