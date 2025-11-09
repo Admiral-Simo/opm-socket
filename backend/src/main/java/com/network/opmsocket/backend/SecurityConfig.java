@@ -19,14 +19,17 @@ public class SecurityConfig {
     public org.springframework.security.web.SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 // 1. Configure CORS
-                .cors(Customizer.withDefaults()) // This will apply the 'corsConfigurationSource' bean
+                .cors(Customizer.withDefaults())
 
                 // 2. Configure OAuth2 Resource Server (JWT validation)
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 
                 // 3. Configure URL authorization
                 .authorizeHttpRequests(authz -> authz
-                        .anyRequest().authenticated() // All requests must be authenticated
+                        // --- THIS IS THE NEW PART ---
+                        .requestMatchers("/ws/**").permitAll() // Allow connections to our WebSocket
+                        // --------------------------
+                        .anyRequest().authenticated()
                 );
 
         return http.build();
@@ -34,16 +37,17 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        // This is the same configuration you had before
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
-        // This applies the configuration to your /api/** routes
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        // Apply CORS to both REST API and WebSocket endpoints
         source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/ws/**", configuration); // <-- Also new
 
         return source;
     }
