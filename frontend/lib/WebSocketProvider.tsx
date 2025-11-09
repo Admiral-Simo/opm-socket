@@ -11,33 +11,30 @@ import { useSession } from "next-auth/react";
 import { Client, type IFrame } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
-// Define the shape of our context
+// 1. Define the shape of our context
 interface WebSocketContextType {
   stompClient: Client | null;
   isConnected: boolean;
 }
 
-// Create the context
+// 2. Create the context
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
-// Create the Provider component
+// 3. Create the Provider component
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   // Use a ref to hold the client, as it's a long-lived object
-  // and we don't want it to trigger re-renders on its own.
   const clientRef = useRef<Client | null>(null);
 
   // Get the auth session
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    // 1. Only run if the session is loaded
     if (status === "loading") {
       return;
     }
 
-    // 2. If user is authenticated, and we don't have a client, create one
     if (status === "authenticated" && session && !clientRef.current) {
       console.log("WebSocket: Session authenticated, attempting to connect...");
       const token = (session as any).accessToken;
@@ -69,7 +66,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         onConnect: (frame: IFrame) => {
           console.log("WebSocket: Connected!");
           setIsConnected(true);
-          // You can subscribe to topics here if needed globally
         },
         onDisconnect: () => {
           console.log("WebSocket: Disconnected.");
@@ -89,7 +85,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       clientRef.current = stompClient;
     }
 
-    // 3. If user is not authenticated, and we have a client, disconnect it
+    // C. If user is not authenticated, and we have a client, disconnect it
     if (status === "unauthenticated" && clientRef.current) {
       console.log("WebSocket: Session lost, deactivating client...");
       clientRef.current.deactivate();
@@ -110,7 +106,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Create a custom hook to use the context
+// 4. Create a custom hook to use the context
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
