@@ -1,4 +1,4 @@
-package com.network.opmsocket.backend;
+package com.network.opmsocket.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
