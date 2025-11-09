@@ -9,17 +9,14 @@ public class PublicMessage {
     private String senderName;
     private String content;
 
-    // No-arg constructor (required for Jackson)
     public PublicMessage() {
     }
 
-    // All-arg constructor
     public PublicMessage(String senderName, String content) {
         this.senderName = senderName;
         this.content = content;
     }
 
-    // Getters and setters
     public String getSenderName() {
         return senderName;
     }

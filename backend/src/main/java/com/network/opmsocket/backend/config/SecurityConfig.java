@@ -18,17 +18,12 @@ public class SecurityConfig {
     @Bean
     public org.springframework.security.web.SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Configure CORS
                 .cors(Customizer.withDefaults())
 
-                // 2. Configure OAuth2 Resource Server (JWT validation)
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 
-                // 3. Configure URL authorization
                 .authorizeHttpRequests(authz -> authz
-                        // --- THIS IS THE NEW PART ---
                         .requestMatchers("/ws/**").permitAll() // Allow connections to our WebSocket
-                        // --------------------------
                         .anyRequest().authenticated()
                 );
 
@@ -45,7 +40,6 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        // Apply CORS to both REST API and WebSocket endpoints
         source.registerCorsConfiguration("/api/**", configuration);
         source.registerCorsConfiguration("/ws/**", configuration); // <-- Also new
 

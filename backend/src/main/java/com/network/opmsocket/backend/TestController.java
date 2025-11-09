@@ -12,12 +12,9 @@ public class TestController {
 
     @GetMapping("/hello")
     public String sayHello(@AuthenticationPrincipal Jwt jwt) {
-        // By default, Spring Security protects ALL endpoints.
-        // If you get here, the token was valid.
 
-        // We can inspect the token:
-        String username = jwt.getClaimAsString("preferred_username"); // This will be "user1"
-        String userId = jwt.getSubject(); // This is the Keycloak User ID
+        String username = jwt.getClaimAsString("preferred_username");
+        String userId = jwt.getSubject();
 
         return "Hello, " + username + "! Your User ID is: " + userId;
     }

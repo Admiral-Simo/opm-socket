@@ -23,11 +23,8 @@ public class ChatSocketController {
     @SendTo("/topic/public")
     public PublicMessage sendMessage(
             @Payload ChatMessage message,
-            // --- THIS IS THE FIX ---
-            // Ask for the exact Principal object we set in the interceptor
             @AuthenticationPrincipal JwtAuthenticationToken principal) {
 
-        // Now, we can safely get the Jwt and its claims
         Jwt jwt = principal.getToken();
         String username = jwt.getClaimAsString("preferred_username");
 
@@ -35,7 +32,6 @@ public class ChatSocketController {
             username = "Anonymous";
         }
 
-        // Create the outgoing message object
         return new PublicMessage(username, message.getContent());
     }
 }

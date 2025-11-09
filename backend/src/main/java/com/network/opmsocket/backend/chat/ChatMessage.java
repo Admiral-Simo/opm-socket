@@ -7,7 +7,6 @@ package com.network.opmsocket.backend.chat;
 public class ChatMessage {
     private String content;
 
-    // No-arg constructor (required for Jackson)
     public ChatMessage() {
     }
 
@@ -16,7 +15,6 @@ public class ChatMessage {
         return content;
     }
 
-    // Setter
     public void setContent(String content) {
         this.content = content;
     }

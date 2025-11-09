@@ -23,7 +23,6 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     @Autowired
     public WebSocketAuthInterceptor(JwtDecoder jwtDecoder) {
-        // Spring Boot's OAuth2 Resource Server config auto-provides this bean
         this.jwtDecoder = jwtDecoder;
     }
 
@@ -31,9 +30,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // Check if the message is a CONNECT command
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            // Get the "Authorization" header from the native STOMP headers
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -43,22 +40,16 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             String token = authHeader.substring(7); // "Bearer " is 7 chars
 
             try {
-                // Decode and validate the JWT
                 Jwt jwt = jwtDecoder.decode(token);
 
-                // Create a Spring Security Principal (Authentication object)
-                // This is the same object that @AuthenticationPrincipal resolves in REST controllers
                 JwtAuthenticationToken principal = new JwtAuthenticationToken(jwt, Collections.emptyList());
 
-                // Set the authenticated user on the WebSocket session
                 accessor.setUser(principal);
             } catch (JwtException e) {
-                // Token is invalid
                 throw new BadCredentialsException("Invalid JWT: " + e.getMessage());
             }
         }
 
-        // Continue processing the message
         return message;
     }
 }
