@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetHelloQuery } from "@/lib/services/api"; // Adjust path if needed
+import { useGetHelloQuery } from "@/lib/services/api";
 
 export default function ProtectedHelloMessage() {
   const { data: helloMessage, isLoading, isError, error } = useGetHelloQuery();

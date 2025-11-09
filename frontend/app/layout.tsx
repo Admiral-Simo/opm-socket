@@ -1,5 +1,5 @@
 import { Inter } from "next/font/google";
-import "./globals.css"; // Your globals.css should have the base dark colors
+import "./globals.css";
 
 import AuthProvider from "@/app/AuthProvider";
 import ReduxProvider from "@/lib/ReduxProvider";

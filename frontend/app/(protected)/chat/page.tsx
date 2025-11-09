@@ -2,35 +2,29 @@
 
 import { useState, useEffect, FormEvent, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useWebSocket } from "@/lib/WebSocketProvider"; // Adjust path
-import { useAppDispatch, useAppSelector } from "@/lib/hooks"; // 1. FIXED: Import the new hooks
+import { useWebSocket } from "@/lib/WebSocketProvider";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
   addMessage,
   selectPublicMessages,
   PublicMessage,
-} from "@/lib/services/chatSlice"; // Adjust path
+} from "@/lib/services/chatSlice";
 import { type IMessage } from "@stomp/stompjs";
 
-// Import your test component (optional)
-import ProtectedHelloMessage from "@/components/ProtectedHelloMessage"; // Adjust path
+import ProtectedHelloMessage from "@/components/ProtectedHelloMessage";
 
 export default function ChatPage() {
   const { data: session } = useSession();
 
-  // 2. FIXED: Use the new typed hooks
   const dispatch = useAppDispatch();
-  const messages = useAppSelector(selectPublicMessages); // This is cleaner now
+  const messages = useAppSelector(selectPublicMessages);
 
-  // Get WebSocket context
   const { stompClient, isConnected } = useWebSocket();
 
-  // Local state for the message input
   const [currentMessage, setCurrentMessage] = useState("");
 
-  // Ref for the message list div
   const messageListRef = useRef<HTMLDivElement>(null);
 
-  // Subscribe to the public topic when connected
   useEffect(() => {
     if (isConnected && stompClient) {
       console.log("ChatPage: Subscribing to /topic/public");
@@ -39,9 +33,7 @@ export default function ChatPage() {
         "/topic/public",
         (message: IMessage) => {
           try {
-            // Parse the message body
             const publicMessage: PublicMessage = JSON.parse(message.body);
-            // Add the new message to the Redux store
             dispatch(addMessage(publicMessage));
           } catch (e) {
             console.error("Failed to parse incoming message:", message.body, e);
@@ -57,14 +49,12 @@ export default function ChatPage() {
     }
   }, [isConnected, stompClient, dispatch]);
 
-  // Scroll to bottom when new messages are added
   useEffect(() => {
     if (messageListRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Handle sending a message
   const handleSendMessage = (e: FormEvent) => {
     e.preventDefault();
     if (currentMessage.trim() === "" || !isConnected || !stompClient) {
@@ -72,12 +62,10 @@ export default function ChatPage() {
     }
 
     try {
-      // Send message to the server
       stompClient.publish({
         destination: "/app/chat.sendMessage",
         body: JSON.stringify({ content: currentMessage }),
       });
-      // Clear the input
       setCurrentMessage("");
     } catch (e) {
       console.error("Failed to send message:", e);
@@ -134,7 +122,6 @@ export default function ChatPage() {
         </button>
       </form>
 
-      {/* This is the test component from before, you can keep or remove it */}
       <div className="mt-8">
         <ProtectedHelloMessage />
       </div>
