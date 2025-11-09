@@ -4,6 +4,7 @@ import "./globals.css"; // Your globals.css should have the base dark colors
 import AuthProvider from "@/app/AuthProvider";
 import ReduxProvider from "@/lib/ReduxProvider";
 import Header from "@/components/Header";
+import { WebSocketProvider } from "@/lib/WebSocketProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,10 +22,12 @@ export default function RootLayout({
         data-gr-ext-installed=""
       >
         <AuthProvider>
-          <ReduxProvider>
-            <Header />
-            <main className="p-8">{children}</main>
-          </ReduxProvider>
+          <WebSocketProvider>
+            <ReduxProvider>
+              <Header />
+              <main className="p-8">{children}</main>
+            </ReduxProvider>
+          </WebSocketProvider>
         </AuthProvider>
       </body>
     </html>
