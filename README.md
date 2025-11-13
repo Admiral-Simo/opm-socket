@@ -19,7 +19,7 @@ Fully containerized (Frontend, Backend, Keycloak)
 
 ## 🧰 Tech Stack
 
-Backend: Spring Boot, Spring Security, WebSocket (STOMP), Java 21
+Backend: Spring Boot, Spring Security, WebSocket (STOMP), Java 17
 
 Frontend: Next.js 14, React 18, Tailwind CSS, next-auth, Redux Toolkit
 
@@ -33,7 +33,7 @@ git clone https://github.com/Admiral-Simo/opm-socket/
 cd opm-socket
 
 2. Generate NEXTAUTH_SECRET
-   
+
 openssl rand -base64 32
 
 
