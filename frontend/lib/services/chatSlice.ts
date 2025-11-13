@@ -4,6 +4,7 @@ import type { RootState } from "../store";
 export interface PublicMessage {
   senderName: string;
   content: string;
+  timestamp: string;
 }
 
 interface ChatState {
@@ -21,10 +22,13 @@ export const chatSlice = createSlice({
     addMessage: (state, action: PayloadAction<PublicMessage>) => {
       state.messages.push(action.payload);
     },
+    setHistory: (state, action: PayloadAction<PublicMessage[]>) => {
+      state.messages = action.payload;
+    },
   },
 });
 
-export const { addMessage } = chatSlice.actions;
+export const { addMessage, setHistory } = chatSlice.actions;
 
 export const selectPublicMessages = (state: RootState) => state.chat.messages;
 

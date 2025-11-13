@@ -1,33 +1,54 @@
 "use client";
 
 import { useState, useEffect, FormEvent, useRef } from "react";
-import { useSession } from "next-auth/react";
 import { useWebSocket } from "@/lib/WebSocketProvider";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
   addMessage,
-  selectPublicMessages,
+  setHistory,
+  selectPublicMessages, // 2. Import the selector function
   PublicMessage,
-} from "@/lib/services/chatSlice";
+} from "@/lib/services/chatSlice"; // Adjust path as needed
+import { useGetChatHistoryQuery } from "@/lib/services/api"; // 3. Import the RTK Query hook
 import { type IMessage } from "@stomp/stompjs";
 
-import ProtectedHelloMessage from "@/components/ProtectedHelloMessage";
+// Helper function to format the timestamp
+function formatTimestamp(isoString: string) {
+  try {
+    return new Date(isoString).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (e) {
+    return "just now";
+  }
+}
 
 export default function ChatPage() {
-  const { data: session } = useSession();
-
   const dispatch = useAppDispatch();
-  const messages = useAppSelector(selectPublicMessages);
+  const messages = useAppSelector(selectPublicMessages); // <-- Pass the selector function directly
 
   const { stompClient, isConnected } = useWebSocket();
-
   const [currentMessage, setCurrentMessage] = useState("");
-
   const messageListRef = useRef<HTMLDivElement>(null);
 
+  const {
+    data: history,
+    isLoading: isHistoryLoading,
+    isSuccess: isHistorySuccess,
+  } = useGetChatHistoryQuery();
+
+  // Load history into Redux when it arrives
   useEffect(() => {
-    if (isConnected && stompClient) {
-      console.log("ChatPage: Subscribing to /topic/public");
+    if (isHistorySuccess && history) {
+      dispatch(setHistory(history));
+    }
+  }, [isHistorySuccess, history, dispatch]);
+
+  // Subscribe to WebSocket *after* history is loaded
+  useEffect(() => {
+    if (isConnected && stompClient && isHistorySuccess) {
+      console.log("ChatPage: History loaded, subscribing to /topic/public");
 
       const subscription = stompClient.subscribe(
         "/topic/public",
@@ -41,14 +62,14 @@ export default function ChatPage() {
         },
       );
 
-      // Unsubscribe on component unmount
       return () => {
         console.log("ChatPage: Unsubscribing from /topic/public");
         subscription.unsubscribe();
       };
     }
-  }, [isConnected, stompClient, dispatch]);
+  }, [isConnected, stompClient, dispatch, isHistorySuccess]);
 
+  // Scroll to bottom when new messages are added
   useEffect(() => {
     if (messageListRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
@@ -57,10 +78,7 @@ export default function ChatPage() {
 
   const handleSendMessage = (e: FormEvent) => {
     e.preventDefault();
-    if (currentMessage.trim() === "" || !isConnected || !stompClient) {
-      return;
-    }
-
+    if (currentMessage.trim() === "" || !isConnected || !stompClient) return;
     try {
       stompClient.publish({
         destination: "/app/chat.sendMessage",
@@ -75,32 +93,45 @@ export default function ChatPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="mb-4 text-4xl font-bold">Public Chat Room</h1>
-      <p className="mb-4 text-gray-400">
-        You are connected as: {session?.user?.name}
-      </p>
 
       {/* Message List */}
       <div
         className="mb-4 h-96 overflow-y-auto rounded-lg bg-gray-800 p-4"
         ref={messageListRef}
       >
-        {messages.length === 0 && (
+        {isHistoryLoading && (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-gray-500">Loading history...</p>
+          </div>
+        )}
+        {isHistorySuccess && messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
             <p className="text-gray-500">No messages yet. Say hello!</p>
           </div>
         )}
-        <ul className="space-y-3">
-          {messages.map((msg, index) => (
-            <li key={index} className="flex flex-col">
-              <span className="text-sm font-bold text-blue-300">
-                {msg.senderName}
-              </span>
-              <p className="break-words rounded-lg bg-gray-700 px-3 py-2">
-                {msg.content}
-              </p>
-            </li>
-          ))}
-        </ul>
+        {/*
+          This line is now safe because 'messages' is guaranteed
+          to be an array (initially [] from chatSlice).
+        */}
+        {isHistorySuccess && (
+          <ul className="space-y-3">
+            {messages.map((msg, index) => (
+              <li key={index} className="flex flex-col">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-bold text-blue-300">
+                    {msg.senderName}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatTimestamp(msg.timestamp)}
+                  </span>
+                </div>
+                <p className="break-words rounded-lg bg-gray-700 px-3 py-2">
+                  {msg.content}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Message Input Form */}
@@ -121,10 +152,6 @@ export default function ChatPage() {
           Send
         </button>
       </form>
-
-      <div className="mt-8">
-        <ProtectedHelloMessage />
-      </div>
     </div>
   );
 }

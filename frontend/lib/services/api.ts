@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getSession } from "next-auth/react";
+import { PublicMessage } from "./chatSlice";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: "http://localhost:8080/api",
@@ -14,8 +15,6 @@ const baseQuery = fetchBaseQuery({
     }
     return headers;
   },
-
-  responseHandler: (response) => response.text(),
 });
 
 export const apiSlice = createApi({
@@ -25,7 +24,10 @@ export const apiSlice = createApi({
     getHello: builder.query<string, void>({
       query: () => "/test/hello",
     }),
+    getChatHistory: builder.query<PublicMessage[], void>({
+      query: () => "/chat/public/history",
+    }),
   }),
 });
 
-export const { useGetHelloQuery } = apiSlice;
+export const { useGetHelloQuery, useGetChatHistoryQuery } = apiSlice;
