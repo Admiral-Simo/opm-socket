@@ -1,5 +1,7 @@
 package com.network.opmsocket.backend.chat;
 
+import com.network.opmsocket.backend.chat.model.Message;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -11,14 +13,13 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ChatSocketController {
 
-    /**
-     * Handles public chat messages.
-     *
-     * @param message   The incoming message payload, mapped from JSON.
-     * @param principal The authenticated user, injected by Spring Security from the
-     * WebSocket session.
-     * @return A PublicMessage object that will be broadcast to all subscribers.
-     */
+    private final MessageRepository messageRepository;
+
+    @Autowired
+    public ChatSocketController(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
+    }
+
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")
     public PublicMessage sendMessage(
@@ -27,11 +28,20 @@ public class ChatSocketController {
 
         Jwt jwt = principal.getToken();
         String username = jwt.getClaimAsString("preferred_username");
-
         if (username == null) {
             username = "Anonymous";
         }
 
-        return new PublicMessage(username, message.getContent());
+        Message newMessage = new Message();
+        newMessage.setSenderName(username);
+        newMessage.setContent(message.getContent());
+
+        Message savedMessage = messageRepository.save(newMessage);
+
+        return new PublicMessage(
+                savedMessage.getSenderName(),
+                savedMessage.getContent(),
+                savedMessage.getTimestamp()
+        );
     }
 }

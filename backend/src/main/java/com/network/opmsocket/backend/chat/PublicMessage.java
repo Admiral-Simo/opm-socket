@@ -1,4 +1,5 @@
 package com.network.opmsocket.backend.chat;
+import java.time.Instant;
 
 /**
  * Represents a public message broadcast from the server.
@@ -8,13 +9,12 @@ package com.network.opmsocket.backend.chat;
 public class PublicMessage {
     private String senderName;
     private String content;
+    private Instant timestamp;
 
-    public PublicMessage() {
-    }
-
-    public PublicMessage(String senderName, String content) {
+    public PublicMessage(String senderName, String content, Instant timestamp) {
         this.senderName = senderName;
         this.content = content;
+        this.timestamp = timestamp;
     }
 
     public String getSenderName() {
@@ -31,5 +31,13 @@ public class PublicMessage {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Instant timestamp) {
+        this.timestamp = timestamp;
     }
 }
