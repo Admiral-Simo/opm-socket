@@ -29,7 +29,7 @@ public class ChatRestController {
         return messageRepository.findAll()
                 .stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

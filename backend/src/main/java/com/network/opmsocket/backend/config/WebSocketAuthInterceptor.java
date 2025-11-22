@@ -1,6 +1,5 @@
 package com.network.opmsocket.backend.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -19,9 +18,12 @@ import java.util.Collections;
 @Component
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
+    private static final String AUTH_HEADER = "Authorization";
+    private static final String TOKEN_PREFIX = "Bearer ";
+
     private final JwtDecoder jwtDecoder;
 
-    @Autowired
+    // Standard constructor injection (Or use @RequiredArgsConstructor if you have Lombok)
     public WebSocketAuthInterceptor(JwtDecoder jwtDecoder) {
         this.jwtDecoder = jwtDecoder;
     }
@@ -30,26 +32,35 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            String authHeader = accessor.getFirstNativeHeader("Authorization");
-
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new BadCredentialsException("Missing or invalid Authorization header");
-            }
-
-            String token = authHeader.substring(7); // "Bearer " is 7 chars
-
-            try {
-                Jwt jwt = jwtDecoder.decode(token);
-
-                JwtAuthenticationToken principal = new JwtAuthenticationToken(jwt, Collections.emptyList());
-
-                accessor.setUser(principal);
-            } catch (JwtException e) {
-                throw new BadCredentialsException("Invalid JWT: " + e.getMessage());
-            }
+        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+            handleConnect(accessor);
         }
 
         return message;
+    }
+
+    private void handleConnect(StompHeaderAccessor accessor) {
+        String token = extractToken(accessor);
+        authenticateUser(accessor, token);
+    }
+
+    private String extractToken(StompHeaderAccessor accessor) {
+        String authHeader = accessor.getFirstNativeHeader(AUTH_HEADER);
+
+        if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
+            throw new BadCredentialsException("Missing or invalid Authorization header");
+        }
+
+        return authHeader.substring(TOKEN_PREFIX.length());
+    }
+
+    private void authenticateUser(StompHeaderAccessor accessor, String token) {
+        try {
+            Jwt jwt = jwtDecoder.decode(token);
+            JwtAuthenticationToken principal = new JwtAuthenticationToken(jwt, Collections.emptyList());
+            accessor.setUser(principal);
+        } catch (JwtException e) {
+            throw new BadCredentialsException("Invalid JWT token", e);
+        }
     }
 }
