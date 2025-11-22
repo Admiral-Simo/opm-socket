@@ -1,6 +1,7 @@
 package com.network.opmsocket.backend.chat;
 
 import com.network.opmsocket.backend.chat.model.Message;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -11,14 +12,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Controller;
 
 @Controller
+@RequiredArgsConstructor
 public class ChatSocketController {
 
     private final MessageRepository messageRepository;
-
-    @Autowired
-    public ChatSocketController(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
-    }
 
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")

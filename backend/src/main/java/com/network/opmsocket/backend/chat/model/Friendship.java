@@ -1,8 +1,15 @@
 package com.network.opmsocket.backend.chat.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.Instant;
 
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "friendships", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"requester_id", "addressee_id"})
@@ -37,19 +44,4 @@ public class Friendship {
         ACCEPTED,
         DECLINED
     }
-
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public AppUser getRequester() { return requester; }
-    public void setRequester(AppUser requester) { this.requester = requester; }
-
-    public AppUser getAddressee() { return addressee; }
-    public void setAddressee(AppUser addressee) { this.addressee = addressee; }
-
-    public FriendshipStatus getStatus() { return status; }
-    public void setStatus(FriendshipStatus status) { this.status = status; }
-
-    public Instant getCreatedAt() { return createdAt; }
 }

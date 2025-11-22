@@ -1,5 +1,6 @@
 package com.network.opmsocket.backend.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -16,17 +17,13 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 
 @Component
+@RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private static final String AUTH_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
 
     private final JwtDecoder jwtDecoder;
-
-    // Standard constructor injection (Or use @RequiredArgsConstructor if you have Lombok)
-    public WebSocketAuthInterceptor(JwtDecoder jwtDecoder) {
-        this.jwtDecoder = jwtDecoder;
-    }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
