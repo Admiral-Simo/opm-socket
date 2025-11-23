@@ -1,4 +1,4 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.model;
 import lombok.Data;
 
 import java.time.Instant;
@@ -9,12 +9,12 @@ import java.time.Instant;
  * "..."}
  */
 @Data
-public class PublicMessage {
+public class PublicMessageDto {
     private String senderName;
     private String content;
     private Instant timestamp;
 
-    public PublicMessage(String senderName, String content, Instant timestamp) {
+    public PublicMessageDto(String senderName, String content, Instant timestamp) {
         this.senderName = senderName;
         this.content = content;
         this.timestamp = timestamp;

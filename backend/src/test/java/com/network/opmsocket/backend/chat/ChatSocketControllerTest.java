@@ -1,6 +1,10 @@
 package com.network.opmsocket.backend.chat;
 
+import com.network.opmsocket.backend.chat.controller.ChatSocketController;
+import com.network.opmsocket.backend.chat.model.ChatMessageDto;
 import com.network.opmsocket.backend.chat.model.Message;
+import com.network.opmsocket.backend.chat.model.PublicMessageDto;
+import com.network.opmsocket.backend.chat.repository.MessageRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,7 +33,7 @@ public class ChatSocketControllerTest {
         String testContent = "Hello WebSocket";
 
         // Mock the input message
-        ChatMessage incomingMessage = new ChatMessage();
+        ChatMessageDto incomingMessage = new ChatMessageDto();
         incomingMessage.setContent(testContent);
 
         // Mock the Security Principal (JWT)
@@ -44,7 +48,7 @@ public class ChatSocketControllerTest {
         when(messageRepository.save(any(Message.class))).thenReturn(savedMessage);
 
         // 2. Act
-        PublicMessage result = chatSocketController.sendMessage(incomingMessage, principal);
+        PublicMessageDto result = chatSocketController.sendMessage(incomingMessage, principal);
 
         // 3. Assert
         assertEquals(testUser, result.getSenderName());

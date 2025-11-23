@@ -1,4 +1,4 @@
-package com.network.opmsocket.backend.chat.model;
+package com.network.opmsocket.backend.user.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

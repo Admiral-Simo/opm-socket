@@ -1,4 +1,4 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.model;
 
 import lombok.Data;
 
@@ -7,6 +7,6 @@ import lombok.Data;
  * Jackson will deserialize the JSON {"content": "..."} into this object.
  */
 @Data
-public class ChatMessage {
+public class ChatMessageDto {
     private String content;
 }

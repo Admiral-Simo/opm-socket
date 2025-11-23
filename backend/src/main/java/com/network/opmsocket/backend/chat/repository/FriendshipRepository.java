@@ -1,6 +1,6 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.repository;
 
-import com.network.opmsocket.backend.chat.model.AppUser;
+import com.network.opmsocket.backend.user.model.AppUser;
 import com.network.opmsocket.backend.chat.model.Friendship;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

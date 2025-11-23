@@ -1,5 +1,6 @@
 package com.network.opmsocket.backend.chat.model;
 
+import com.network.opmsocket.backend.user.model.AppUser;
 import jakarta.persistence.*;
 import lombok.*;
 

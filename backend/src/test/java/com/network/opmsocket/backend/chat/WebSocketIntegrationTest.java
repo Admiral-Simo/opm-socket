@@ -1,6 +1,8 @@
 package com.network.opmsocket.backend.chat;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Import ObjectMapper
+import com.network.opmsocket.backend.chat.model.ChatMessageDto;
+import com.network.opmsocket.backend.chat.model.PublicMessageDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired; // Import Autowired
@@ -70,19 +72,19 @@ public class WebSocketIntegrationTest {
         String url = "ws://localhost:" + port + "/ws";
 
         // 3. Create the StompSessionHandler
-        BlockingQueue<PublicMessage> blockingQueue = new LinkedBlockingDeque<>();
+        BlockingQueue<PublicMessageDto> blockingQueue = new LinkedBlockingDeque<>();
         StompSessionHandlerAdapter sessionHandler = new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
                 session.subscribe("/topic/public", new StompFrameHandler() {
                     @Override
                     public Type getPayloadType(StompHeaders headers) {
-                        return PublicMessage.class;
+                        return PublicMessageDto.class;
                     }
 
                     @Override
                     public void handleFrame(StompHeaders headers, Object payload) {
-                        blockingQueue.offer((PublicMessage) payload);
+                        blockingQueue.offer((PublicMessageDto) payload);
                     }
                 });
             }
@@ -98,13 +100,13 @@ public class WebSocketIntegrationTest {
         // 5. Send a message
         Thread.sleep(500);
 
-        ChatMessage chatMessage = new ChatMessage();
+        ChatMessageDto chatMessage = new ChatMessageDto();
         chatMessage.setContent("Hello Integration Test!");
 
         session.send("/app/chat.sendMessage", chatMessage);
 
         // 6. Wait for the message (Increased timeout slightly to be safe)
-        PublicMessage receivedMessage = blockingQueue.poll(5, TimeUnit.SECONDS);
+        PublicMessageDto receivedMessage = blockingQueue.poll(5, TimeUnit.SECONDS);
 
         // 7. Assertions
         assertThat(receivedMessage).isNotNull();

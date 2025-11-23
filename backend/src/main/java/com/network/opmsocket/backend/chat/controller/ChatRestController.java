@@ -1,8 +1,9 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.controller;
 
+import com.network.opmsocket.backend.chat.repository.MessageRepository;
 import com.network.opmsocket.backend.chat.model.Message;
+import com.network.opmsocket.backend.chat.model.PublicMessageDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +22,7 @@ public class ChatRestController {
      * This is automatically secured by SecurityConfig to require an authenticated user.
      */
     @GetMapping("/public/history")
-    public List<PublicMessage> getPublicChatHistory() {
+    public List<PublicMessageDto> getPublicChatHistory() {
         return messageRepository.findAll()
                 .stream()
                 .map(this::convertToDto)
@@ -31,8 +32,8 @@ public class ChatRestController {
     /**
      * Helper method to convert a Message (Entity) to a PublicMessage (DTO).
      */
-    private PublicMessage convertToDto(Message message) {
-        return new PublicMessage(
+    private PublicMessageDto convertToDto(Message message) {
+        return new PublicMessageDto(
                 message.getSenderName(),
                 message.getContent(),
                 message.getTimestamp()

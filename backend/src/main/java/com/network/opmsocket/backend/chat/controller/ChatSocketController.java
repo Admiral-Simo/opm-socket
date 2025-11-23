@@ -1,8 +1,10 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.controller;
 
+import com.network.opmsocket.backend.chat.repository.MessageRepository;
+import com.network.opmsocket.backend.chat.model.ChatMessageDto;
 import com.network.opmsocket.backend.chat.model.Message;
+import com.network.opmsocket.backend.chat.model.PublicMessageDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -19,8 +21,8 @@ public class ChatSocketController {
 
     @MessageMapping("/chat.sendMessage")
     @SendTo("/topic/public")
-    public PublicMessage sendMessage(
-            @Payload ChatMessage message,
+    public PublicMessageDto sendMessage(
+            @Payload ChatMessageDto message,
             @AuthenticationPrincipal JwtAuthenticationToken principal) {
 
         Jwt jwt = principal.getToken();
@@ -35,7 +37,7 @@ public class ChatSocketController {
 
         Message savedMessage = messageRepository.save(newMessage);
 
-        return new PublicMessage(
+        return new PublicMessageDto(
                 savedMessage.getSenderName(),
                 savedMessage.getContent(),
                 savedMessage.getTimestamp()

@@ -1,6 +1,8 @@
 package com.network.opmsocket.backend.chat;
 
+import com.network.opmsocket.backend.chat.controller.ChatRestController;
 import com.network.opmsocket.backend.chat.model.Message;
+import com.network.opmsocket.backend.chat.repository.MessageRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

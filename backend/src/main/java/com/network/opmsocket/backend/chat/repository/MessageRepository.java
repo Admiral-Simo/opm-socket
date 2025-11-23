@@ -1,4 +1,4 @@
-package com.network.opmsocket.backend.chat;
+package com.network.opmsocket.backend.chat.repository;
 
 import com.network.opmsocket.backend.chat.model.Message;
 import org.springframework.data.jpa.repository.JpaRepository;
