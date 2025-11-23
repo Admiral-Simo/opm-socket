@@ -18,7 +18,7 @@ export default function RootLayout({
       <body
         className={`${inter.className} bg-gray-900 text-gray-200`}
         cz-shortcut-listen="true"
-        data-new-gr-c-s-check-loaded="14.1261.0"
+        data-new-gr-c-s-check-loaded="14.1264.0"
         data-gr-ext-installed=""
       >
         <AuthProvider>

@@ -32,6 +32,19 @@ export default function Header() {
         {status === "authenticated" && (
           <div className="flex items-center gap-4">
             <span className="text-gray-300">Hi, {session.user?.name}</span>
+            <Link
+              href="/friends"
+              className="font-medium text-blue-400 hover:underline"
+            >
+              Friends
+            </Link>
+            <Link
+              href="/chat"
+              className="font-medium text-blue-400 hover:underline"
+            >
+              Public Chat
+            </Link>
+
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="rounded bg-red-600 px-5 py-2 font-bold text-white transition-all hover:bg-red-500"
