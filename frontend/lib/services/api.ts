@@ -27,7 +27,11 @@ export const apiSlice = createApi({
     getChatHistory: builder.query<PublicMessage[], void>({
       query: () => "/chat/public/history",
     }),
+    syncUser: builder.mutation<void, void>({
+      query: () => ({ url: "/users/sync", method: "POST" }),
+    }),
   }),
 });
 
-export const { useGetHelloQuery, useGetChatHistoryQuery } = apiSlice;
+export const { useGetHelloQuery, useGetChatHistoryQuery, useSyncUserMutation } =
+  apiSlice;

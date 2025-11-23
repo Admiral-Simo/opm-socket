@@ -1,8 +1,9 @@
 "use client";
 
+import { useSyncUserMutation } from "@/lib/services/api";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function ProtectedLayout({
   children,
@@ -12,6 +13,10 @@ export default function ProtectedLayout({
   const { status } = useSession();
   const router = useRouter();
 
+  const [syncUser] = useSyncUserMutation();
+
+  const hasSynced = useRef(false);
+
   useEffect(() => {
     if (status === "loading") {
       return;
@@ -20,7 +25,20 @@ export default function ProtectedLayout({
     if (status === "unauthenticated") {
       router.push("/");
     }
-  }, [status, router]);
+
+    if (status === "authenticated" && !hasSynced.current) {
+      syncUser()
+        .unwrap()
+        .then(() => {
+          console.log("User synchronized successfully.");
+        })
+        .catch((err: Error) => {
+          console.error("Error synchronizing user:", err);
+        });
+
+      hasSynced.current = true;
+    }
+  }, [status, router, syncUser]);
 
   if (status === "loading") {
     return (
