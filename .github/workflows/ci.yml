@@ -57,6 +57,11 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
+      # --- NEW STEP: Run Frontend Tests ---
+      - name: Run Jest Tests
+        run: npm test
+      # ------------------------------------
+
       - name: Build (Type Check & Compile)
         env:
           NEXT_PUBLIC_API_URL: "http://localhost:8080"
