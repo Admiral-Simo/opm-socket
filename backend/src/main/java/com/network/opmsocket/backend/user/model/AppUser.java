@@ -5,6 +5,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.time.Instant;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,5 +18,15 @@ public class AppUser {
     private String id; // We will use the Keycloak UUID here
 
     private String username;
+    private boolean online;
+    private Instant lastSeen;
     private String email;
+
+    public AppUser(String id, String username, String email) {
+        this.id = id;
+        this.username = id;
+        this.email = email;
+        this.online = true;
+        this.lastSeen = Instant.now();
+    }
 }

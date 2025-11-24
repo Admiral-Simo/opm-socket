@@ -70,7 +70,9 @@ public class FriendService {
                     return new FriendDto(
                             f.getId(),
                             f.getRequester().getUsername(),
-                            f.getStatus().toString()
+                            f.getStatus().toString(),
+                            f.getRequester().isOnline(),
+                            f.getRequester().getLastSeen()
                     );
                 })
                 .toList();
@@ -89,7 +91,9 @@ public class FriendService {
                     return new FriendDto(
                             f.getId(),
                             other.getUsername(),
-                            Friendship.FriendshipStatus.ACCEPTED.toString()
+                            "ACCEPTED",
+                            other.isOnline(),
+                            other.getLastSeen()
                     );
                 })
                 .toList();
