@@ -79,8 +79,10 @@ public class FriendService {
                 .orElseThrow(() -> new RuntimeException("User not found."));
 
         return friendshipRepository
-                .findByAddresseeAndStatus(user, Friendship.FriendshipStatus.ACCEPTED)
-                .stream().map(f -> {
+                .findByRequesterOrAddressee(user, user)
+                .stream()
+                .filter(f -> f.getStatus().equals(Friendship.FriendshipStatus.ACCEPTED))
+                .map(f -> {
                     AppUser other = f.getRequester().getId().equals(userId) ? f.getAddressee() : f.getRequester();
                     return new FriendDto(
                             f.getId(),
