@@ -32,14 +32,14 @@ public class FriendController {
         friendService.acceptFriendRequest(jwt.getSubject(), friendshipId);
     }
 
-    @PostMapping("/requests")
+    @GetMapping("/requests")
     public List<FriendDto> getPendingRequests(
             @AuthenticationPrincipal Jwt jwt
     ) {
         return friendService.getPendingRequests(jwt.getSubject());
     }
 
-    @PostMapping
+    @GetMapping
     public List<FriendDto> getFriends(
             @AuthenticationPrincipal Jwt jwt
     ) {

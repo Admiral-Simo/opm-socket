@@ -29,7 +29,7 @@ public class FriendService {
         }
 
         if (requester.getId().equals(target.getId())) {
-            throw new RuntimeException("You cannot yourself as a friend.");
+            throw new RuntimeException("You cannot add yourself as a friend.");
         }
 
         if (friendshipRepository.findFriendshipBetween(requester, target).isPresent()) {
