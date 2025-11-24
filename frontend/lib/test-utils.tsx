@@ -7,33 +7,42 @@ import { apiSlice } from "@/lib/services/api";
 import chatReducer from "@/lib/services/chatSlice";
 import type { RootState } from "@/lib/store";
 
+export const setupTestStore = (preloadedState?: Partial<RootState>) => {
+  return configureStore({
+    reducer: {
+      [apiSlice.reducerPath]: apiSlice.reducer,
+      chat: chatReducer,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(apiSlice.middleware),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    preloadedState: preloadedState as any,
+  });
+};
+
+export type AppStore = ReturnType<typeof setupTestStore>;
+
 interface ExtendedRenderOptions extends Omit<RenderOptions, "queries"> {
   preloadedState?: Partial<RootState>;
-  // We use 'unknown' or specific store type instead of any, but for test utils 'any' is often accepted practice
-  // to allow flexible mocking. We'll use a generic approach here.
-  store?: ReturnType<typeof configureStore>;
+  store?: AppStore;
 }
 
 export function renderWithProviders(
   ui: React.ReactElement,
-  { preloadedState = {}, store, ...renderOptions }: ExtendedRenderOptions = {},
+  {
+    preloadedState = {},
+    store = setupTestStore(preloadedState),
+    ...renderOptions
+  }: ExtendedRenderOptions = {},
 ) {
-  if (!store) {
-    store = configureStore({
-      reducer: {
-        [apiSlice.reducerPath || "api"]: apiSlice.reducer,
-        chat: chatReducer,
-      },
-      middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(apiSlice.middleware),
-      preloadedState,
-    });
+  function Wrapper({ children }: PropsWithChildren<unknown>): React.ReactNode {
+    return <Provider store={store}>{children}</Provider>;
   }
 
-  // PropsWithChildren is a generic, but standard usage implies children
-  function Wrapper({ children }: PropsWithChildren<unknown>): JSX.Element {
-    return <Provider store={store!}>{children}</Provider>;
-  }
-
-  return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };
+  return {
+    store,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...render(ui, { wrapper: Wrapper as any, ...renderOptions }),
+  };
 }
