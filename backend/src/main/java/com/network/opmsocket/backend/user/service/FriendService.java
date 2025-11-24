@@ -3,6 +3,8 @@ package com.network.opmsocket.backend.user.service;
 import com.network.opmsocket.backend.chat.model.Friendship;
 import com.network.opmsocket.backend.chat.repository.AppUserRepository;
 import com.network.opmsocket.backend.chat.repository.FriendshipRepository;
+import com.network.opmsocket.backend.exception.NotFoundException;
+import com.network.opmsocket.backend.exception.UnAuthorizedException;
 import com.network.opmsocket.backend.user.model.AppUser;
 import com.network.opmsocket.backend.user.model.FriendDto;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ public class FriendService {
 
         AppUser target = appUserRepository.findByUsername(targetUsername);
         if (target == null) {
-            throw new RuntimeException("Target user not found.");
+            throw new NotFoundException("Target user not found.");
         }
 
         if (requester.getId().equals(target.getId())) {
@@ -47,10 +49,10 @@ public class FriendService {
     @Transactional
     public void acceptFriendRequest(String userId, Long friendshipId) {
         Friendship friendship = friendshipRepository.findById(friendshipId)
-                .orElseThrow(() -> new RuntimeException("Friendship request is not found."));
+                .orElseThrow(() -> new NotFoundException("Friendship request is not found."));
 
         if (!friendship.getAddressee().getId().equals(userId)) {
-            throw new RuntimeException("Not authorized to accept this friend request.");
+            throw new UnAuthorizedException("Not authorized to accept this friend request.");
         }
 
         friendship.setStatus(Friendship.FriendshipStatus.ACCEPTED);
@@ -59,7 +61,7 @@ public class FriendService {
 
     public List<FriendDto> getPendingRequests(String userId) {
         AppUser user = appUserRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new NotFoundException("User not found."));
 
         return friendshipRepository
                         .findByAddresseeAndStatus(user, Friendship.FriendshipStatus.PENDING)
@@ -76,7 +78,7 @@ public class FriendService {
 
     public List<FriendDto> getFriends(String userId) {
         AppUser user = appUserRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+                .orElseThrow(() -> new NotFoundException("User not found."));
 
         return friendshipRepository
                 .findByRequesterOrAddressee(user, user)
