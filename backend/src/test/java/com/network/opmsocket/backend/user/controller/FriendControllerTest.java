@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,8 +58,8 @@ public class FriendControllerTest {
     public void getFriends_ShouldReturnList() throws Exception {
         // Arrange
         List<FriendDto> friends = Arrays.asList(
-                new FriendDto(1L, "friend1", "ACCEPTED"),
-                new FriendDto(2L, "friend2", "ACCEPTED")
+                new FriendDto(1L, "friend1", "ACCEPTED", true, Instant.now()),
+                new FriendDto(2L, "friend2", "ACCEPTED", true, Instant.now())
         );
         given(friendService.getFriends("user-id")).willReturn(friends);
 

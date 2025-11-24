@@ -24,7 +24,7 @@ public class AppUser {
 
     public AppUser(String id, String username, String email) {
         this.id = id;
-        this.username = id;
+        this.username = username;
         this.email = email;
         this.online = true;
         this.lastSeen = Instant.now();
