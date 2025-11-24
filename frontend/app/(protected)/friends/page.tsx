@@ -39,7 +39,7 @@ function FriendsPage() {
       await sendRequest(targetUsername).unwrap();
       alert("Request sent!");
       setTargetUsername("");
-    } catch (_err) {
+    } catch {
       alert("No such username.");
     }
   };

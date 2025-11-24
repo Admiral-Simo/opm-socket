@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { useSession } from "next-auth/react";
-import { Client, type IFrame } from "@stomp/stompjs";
+import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 interface WebSocketContextType {
@@ -20,7 +20,11 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
+  const [stompClient, setStompClient] = useState<Client | null>(null);
 
+  // We still use a ref to track the *active* client instance internally
+  // to prevent cleanup effects from dealing with stale closures,
+  // but we expose the 'stompClient' state to the context.
   const clientRef = useRef<Client | null>(null);
 
   const { data: session, status } = useSession();
@@ -30,29 +34,29 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // CONNECT
     if (status === "authenticated" && session && !clientRef.current) {
       console.log("WebSocket: Session authenticated, attempting to connect...");
-      const token = (session as any).accessToken;
+
+      // TypeScript now knows about accessToken thanks to next-auth.d.ts
+      const token = session.accessToken;
 
       if (!token) {
         console.error("WebSocket: No access token found in session.");
         return;
       }
 
-      const stompClient = new Client({
+      const client = new Client({
         webSocketFactory: () => {
           return new SockJS("http://localhost:8080/ws");
         },
-
         connectHeaders: {
           Authorization: `Bearer ${token}`,
         },
-
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
-
-        onConnect: (frame: IFrame) => {
+        onConnect: () => {
           console.log("WebSocket: Connected!");
           setIsConnected(true);
         },
@@ -60,7 +64,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           console.log("WebSocket: Disconnected.");
           setIsConnected(false);
         },
-        onStompError: (frame: IFrame) => {
+        onStompError: (frame) => {
           console.error(
             "WebSocket: Broker reported error: " + frame.headers["message"],
           );
@@ -69,21 +73,25 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      // Activate the client
-      stompClient.activate();
-      clientRef.current = stompClient;
+      client.activate();
+      clientRef.current = client;
+      // eslint-disable-next-line
+      setStompClient(client);
     }
 
+    // DISCONNECT
     if (status === "unauthenticated" && clientRef.current) {
       console.log("WebSocket: Session lost, deactivating client...");
       clientRef.current.deactivate();
       clientRef.current = null;
+      setStompClient(null);
       setIsConnected(false);
     }
-  }, [status, session]); // Re-run this effect when auth status changes
+  }, [status, session]);
 
+  // We pass the state variable, not the ref, to the context
   const value = {
-    stompClient: clientRef.current,
+    stompClient,
     isConnected,
   };
 

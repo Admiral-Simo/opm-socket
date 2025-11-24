@@ -9,7 +9,9 @@ import type { RootState } from "@/lib/store";
 
 interface ExtendedRenderOptions extends Omit<RenderOptions, "queries"> {
   preloadedState?: Partial<RootState>;
-  store?: any;
+  // We use 'unknown' or specific store type instead of any, but for test utils 'any' is often accepted practice
+  // to allow flexible mocking. We'll use a generic approach here.
+  store?: ReturnType<typeof configureStore>;
 }
 
 export function renderWithProviders(
@@ -28,8 +30,9 @@ export function renderWithProviders(
     });
   }
 
-  function Wrapper({ children }: PropsWithChildren<{}>): JSX.Element {
-    return <Provider store={store}>{children}</Provider>;
+  // PropsWithChildren is a generic, but standard usage implies children
+  function Wrapper({ children }: PropsWithChildren<unknown>): JSX.Element {
+    return <Provider store={store!}>{children}</Provider>;
   }
 
   return { store, ...render(ui, { wrapper: Wrapper, ...renderOptions }) };

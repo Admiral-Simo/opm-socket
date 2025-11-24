@@ -16,7 +16,7 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: async (headers) => {
     const session = await getSession();
 
-    const token = (session as any)?.accessToken;
+    const token = session?.accessToken;
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);

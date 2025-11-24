@@ -25,7 +25,6 @@ describe("ChatPage", () => {
       status: "authenticated",
     });
 
-    // Default mock: empty history
     (useGetChatHistoryQuery as jest.Mock).mockReturnValue({
       data: [],
       isLoading: false,
@@ -63,9 +62,8 @@ describe("ChatPage", () => {
       },
     ];
 
-    // --- FIX: Override the mock for THIS test only ---
     (useGetChatHistoryQuery as jest.Mock).mockReturnValue({
-      data: mockMessages, // Return the data we want to see
+      data: mockMessages,
       isLoading: false,
       isSuccess: true,
       isError: false,
@@ -74,8 +72,6 @@ describe("ChatPage", () => {
 
     renderWithProviders(<ChatPage />);
 
-    // Now the component will dispatch setHistory(mockMessages)
-    // and the UI will update correctly.
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Hello Test")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
@@ -90,7 +86,8 @@ describe("ChatPage", () => {
       stompClient: {
         publish: mockPublish,
         subscribe: mockSubscribe,
-      } as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as unknown as any,
       isConnected: true,
     });
 

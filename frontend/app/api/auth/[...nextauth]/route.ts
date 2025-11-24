@@ -106,8 +106,8 @@ export const authOptions: AuthOptions = {
     },
 
     async session({ session, token }) {
-      (session as any).accessToken = token.accessToken;
-      (session as any).error = token.error;
+      session.accessToken = token.accessToken;
+      session.error = token.error;
       return session;
     },
   },

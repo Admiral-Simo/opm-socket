@@ -19,7 +19,7 @@ function formatTimestamp(isoString: string) {
       hour: "2-digit",
       minute: "2-digit",
     });
-  } catch (e) {
+  } catch {
     return "just now";
   }
 }
@@ -85,8 +85,8 @@ export default function ChatPage() {
         body: JSON.stringify({ content: currentMessage }),
       });
       setCurrentMessage("");
-    } catch (e) {
-      console.error("Failed to send message:", e);
+    } catch (error) {
+      console.error("Failed to send message:", error);
     }
   };
 
