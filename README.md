@@ -6,25 +6,17 @@ The entire system is fully containerized with Docker Compose.
 ## ✅ Features
 
 Real-time messaging using WebSockets (STOMP)
-
 Secure login via Keycloak + next-auth (OAuth2/OIDC)
-
 Protected frontend pages (/chat)
-
 Backend API & WebSocket secured with JWT
-
 Automatic token refresh
-
 Fully containerized (Frontend, Backend, Keycloak)
 
 ## 🧰 Tech Stack
 
 Backend: Spring Boot, Spring Security, WebSocket (STOMP), Java 17
-
-Frontend: Next.js 14, React 18, Tailwind CSS, next-auth, Redux Toolkit
-
+Frontend: Next.js, React, Tailwind CSS, next-auth, Redux Toolkit
 Auth: Keycloak
-
 DevOps: Docker & Docker Compose
 
 🚀 Getting Started
@@ -32,30 +24,42 @@ DevOps: Docker & Docker Compose
 git clone https://github.com/Admiral-Simo/opm-socket/
 cd opm-socket
 
-2. Generate NEXTAUTH_SECRET
+2. Run this command
+```
+docker-compose up --build keycloak
+```
 
+3. Set up Keycloak
+- Open Keycloak admin console: http://localhost:8180
+- Log in with admin/admin
+- Create a new realm: chat-app
+- Create a new client: chat-app-client
+  - Client ID: chat-app-client
+  - Client Protocol: openid-connect
+  - Root URL: http://localhost:3000
+  - Valid Redirect URIs: http://localhost:3000/api/auth/callback/keycloak
+  - Web Origins: *
+
+4. Generate NEXTAUTH_SECRET
+
+```bash
 openssl rand -base64 32
+```
 
+5. Create a .env file in the root directory of the frontend with the following content:
 
-Place it in docker-compose.yml.
+```env
 
-3. Run the entire stack
-docker-compose up --build
+#### - place the output in the NEXTAUTH_SECRET
+NEXTAUTH_SECRET=YOUR_GENERATED_32_BYTE_SECRET_GOES_HERE
 
-🌐 Access
-Service	URL
-Frontend	http://localhost:3000
+KEYCLOAK_CLIENT_ID=chat-app-client
+#### - copy and paste your client secret from Keycloak
+KEYCLOAK_CLIENT_SECRET=**********
+#### - keep those as they are
+KEYCLOAK_ISSUER=http://localhost:8180/realms/chat-app
 
-Backend	http://localhost:8080
+NEXTAUTH_URL=http://localhost:3000
+```
 
-Keycloak	http://localhost:8180
- (admin/admin)
-✅ Usage
-
-Visit the frontend
-
-Click Sign In
-
-Log in with a test user
-
-Start chatting in real time (open two tabs to test)
+# access the chat app at http://localhost:3000
