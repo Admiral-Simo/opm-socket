@@ -6,6 +6,8 @@ export interface FriendDto {
   id: number;
   username: string;
   status: string;
+  online: boolean;
+  lastSeen: string;
 }
 
 const baseQuery = fetchBaseQuery({

@@ -7,6 +7,21 @@ import {
 } from "@/lib/services/api";
 import { useState } from "react";
 
+function formatLastSeen(isoString: string) {
+  if (!isoString) return "Offline";
+  const lastSeenDate = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "Last seen just now";
+  if (diffMins < 60) return `Last seen ${diffMins}m ago`;
+  if (diffHours < 24) return `Last seen ${diffHours}h ago`;
+  return `Last seen ${diffDays}d ago`;
+}
+
 function FriendsPage() {
   const [targetUsername, setTargetUsername] = useState("");
 
@@ -83,7 +98,7 @@ function FriendsPage() {
           )}
         </div>
 
-        {/* --- SECTION 3: MY FRIENDS --- */}
+        {/* --- MY FRIENDS SECTION (UPDATED) --- */}
         <div className="rounded-lg bg-gray-800 p-6 shadow-lg">
           <h2 className="mb-4 text-xl font-semibold text-green-400">
             My Friends ({friends?.length || 0})
@@ -99,8 +114,27 @@ function FriendsPage() {
                   key={friend.id}
                   className="flex items-center justify-between rounded bg-gray-700 p-3"
                 >
-                  <span className="font-medium">{friend.username}</span>
-                  <div className="h-3 w-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{friend.username}</span>
+                    {/* Last Seen Status (only if offline) */}
+                    {!friend.online && (
+                      <span className="text-xs text-gray-400">
+                        {formatLastSeen(friend.lastSeen)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Online/Offline Indicator */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-medium ${friend.online ? "text-green-400" : "text-gray-500"}`}
+                    >
+                      {friend.online ? "Online" : "Offline"}
+                    </span>
+                    <div
+                      className={`h-3 w-3 rounded-full ${friend.online ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" : "bg-gray-500"}`}
+                    ></div>
+                  </div>
                 </li>
               ))}
             </ul>
