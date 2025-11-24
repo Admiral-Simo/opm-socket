@@ -59,7 +59,7 @@ export const apiSlice = createApi({
 
     acceptFriendRequest: builder.mutation<void, number>({
       query: (friendshipId) => ({
-        url: `/friends/requests/${friendshipId}`,
+        url: `/friends/accept/${friendshipId}`,
         method: "POST",
       }),
       invalidatesTags: ["Friends"],
