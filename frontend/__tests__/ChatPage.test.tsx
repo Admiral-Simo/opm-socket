@@ -106,4 +106,33 @@ describe("ChatPage", () => {
 
     expect((input as HTMLInputElement).value).toBe("");
   });
+
+  it("shows upload error modal when server returns an error", async () => {
+    jest.spyOn(wsProvider, "useWebSocket").mockReturnValue({ stompClient: null, isConnected: false });
+
+    // Mock session with access token (ensure accessToken is present)
+    (useSession as jest.Mock).mockReturnValue({ data: { user: { name: "Test User" }, accessToken: "token" }, status: "authenticated" });
+
+    // Mock fetch to return a 400 with error message
+    const originalFetch = (global as any).fetch;
+    (global as any).fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "File too large. Max size is 1MB." }),
+    });
+
+    const { container } = renderWithProviders(<ChatPage />);
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["dummy"], "small.png", { type: "image/png" });
+
+    // Simulate file selection
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // Wait for the modal message to appear
+    const modalText = await screen.findByText(/File too large. Max size is 1MB./i);
+    expect(modalText).toBeInTheDocument();
+
+    // Clean up
+    (global as any).fetch = originalFetch;
+  });
 });

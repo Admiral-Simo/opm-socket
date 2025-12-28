@@ -13,6 +13,7 @@ import {
 import { useGetChatHistoryQuery } from "@/lib/services/api"; // 3. Import the RTK Query hook
 import { type IMessage } from "@stomp/stompjs";
 import { getAbsoluteUrl } from "@/lib/utils/url";
+import Modal from "@/components/Modal";
 
 // Helper function to format the timestamp
 function formatTimestamp(isoString: string) {
@@ -106,6 +107,8 @@ export default function ChatPage() {
     if (!session?.accessToken) {
       console.error("No access token for upload");
       setUploadError("Not authenticated");
+      // auto-clear
+      setTimeout(() => setUploadError(null), 5000);
       return;
     }
 
@@ -127,6 +130,8 @@ export default function ChatPage() {
         const error = await res.json().catch(() => ({}));
         console.error("Upload failed:", error);
         setUploadError(error?.error || "Upload failed");
+        // auto-clear message
+        setTimeout(() => setUploadError(null), 5000);
         return;
       }
 
@@ -143,12 +148,9 @@ export default function ChatPage() {
     } catch (err) {
       console.error("Upload error:", err);
       setUploadError("Network or server error during upload");
+      setTimeout(() => setUploadError(null), 5000);
     } finally {
       setIsUploading(false);
-      // auto-clear error after a short time
-      if (uploadError) {
-        setTimeout(() => setUploadError(null), 5000);
-      }
     }
   };
 
@@ -238,7 +240,8 @@ export default function ChatPage() {
           </label>
           <div className="flex flex-col">
             {isUploading && <span className="text-sm text-gray-300">Uploading...</span>}
-            {uploadError && <span className="text-sm text-red-400">{uploadError}</span>}
+            {/* Display upload errors in a modal instead of inline text */}
+          <Modal open={!!uploadError} title="Upload Error" message={uploadError ?? ""} onClose={() => setUploadError(null)} />
           </div>
         </div>
       </div>
