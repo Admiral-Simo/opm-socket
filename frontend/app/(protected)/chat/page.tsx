@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, FormEvent, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useWebSocket } from "@/lib/WebSocketProvider";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -11,6 +12,8 @@ import {
 } from "@/lib/services/chatSlice"; // Adjust path as needed
 import { useGetChatHistoryQuery } from "@/lib/services/api"; // 3. Import the RTK Query hook
 import { type IMessage } from "@stomp/stompjs";
+import { getAbsoluteUrl } from "@/lib/utils/url";
+import Modal from "@/components/Modal";
 
 // Helper function to format the timestamp
 function formatTimestamp(isoString: string) {
@@ -24,6 +27,10 @@ function formatTimestamp(isoString: string) {
   }
 }
 
+function isImageUrl(url: string) {
+  return url.match(/\.(png|jpe?g|gif|webp|avif)(\?|$)/i);
+}
+
 export default function ChatPage() {
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectPublicMessages); // <-- Pass the selector function directly
@@ -31,6 +38,8 @@ export default function ChatPage() {
   const { stompClient, isConnected } = useWebSocket();
   const [currentMessage, setCurrentMessage] = useState("");
   const messageListRef = useRef<HTMLDivElement>(null);
+
+  const { data: session } = useSession();
 
   const {
     data: history,
@@ -90,6 +99,61 @@ export default function ChatPage() {
     }
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const uploadFile = async (file: File | null) => {
+    if (!file) return;
+    if (!session?.accessToken) {
+      console.error("No access token for upload");
+      setUploadError("Not authenticated");
+      // auto-clear
+      setTimeout(() => setUploadError(null), 5000);
+      return;
+    }
+
+    const form = new FormData();
+    form.append("file", file);
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const res = await fetch("http://localhost:8080/upload", {
+        method: "POST",
+        body: form,
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        console.error("Upload failed:", error);
+        setUploadError(error?.error || "Upload failed");
+        // auto-clear message
+        setTimeout(() => setUploadError(null), 5000);
+        return;
+      }
+
+      const data = await res.json();
+      const url = data.url as string;
+
+      // send the URL as a chat message via WebSocket
+      if (isConnected && stompClient) {
+        stompClient.publish({
+          destination: "/app/chat.sendMessage",
+          body: JSON.stringify({ content: url }),
+        });
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      setUploadError("Network or server error during upload");
+      setTimeout(() => setUploadError(null), 5000);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="mb-4 text-4xl font-bold">Public Chat Room</h1>
@@ -109,10 +173,7 @@ export default function ChatPage() {
             <p className="text-gray-500">No messages yet. Say hello!</p>
           </div>
         )}
-        {/*
-          This line is now safe because 'messages' is guaranteed
-          to be an array (initially [] from chatSlice).
-        */}
+
         {isHistorySuccess && (
           <ul className="space-y-3">
             {messages.map((msg, index) => (
@@ -125,9 +186,20 @@ export default function ChatPage() {
                     {formatTimestamp(msg.timestamp)}
                   </span>
                 </div>
-                <p className="break-words rounded-lg bg-gray-700 px-3 py-2">
-                  {msg.content}
-                </p>
+
+                <div className="break-words rounded-lg bg-gray-700 px-3 py-2">
+                  {msg.content.startsWith("/uploads/") || msg.content.startsWith("http") ? (
+                    isImageUrl(msg.content) ? (
+                      <img src={getAbsoluteUrl(msg.content)} alt="Uploaded file" className="max-w-full" />
+                    ) : (
+                      <a href={getAbsoluteUrl(msg.content)} target="_blank" rel="noreferrer" className="text-blue-300 underline">
+                        {msg.content}
+                      </a>
+                    )
+                  ) : (
+                    <p>{msg.content}</p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -135,23 +207,44 @@ export default function ChatPage() {
       </div>
 
       {/* Message Input Form */}
-      <form onSubmit={handleSendMessage} className="flex gap-2">
-        <input
-          type="text"
-          value={currentMessage}
-          onChange={(e) => setCurrentMessage(e.target.value)}
-          placeholder={isConnected ? "Type your message..." : "Connecting..."}
-          disabled={!isConnected}
-          className="flex-grow rounded-lg border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          disabled={!isConnected || currentMessage.trim() === ""}
-          className="rounded-lg bg-blue-600 px-6 py-3 font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50"
-        >
-          Send
-        </button>
-      </form>
+      <div className="flex gap-2">
+        <form onSubmit={handleSendMessage} className="flex-grow">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={currentMessage}
+              onChange={(e) => setCurrentMessage(e.target.value)}
+              placeholder={isConnected ? "Type your message..." : "Connecting..."}
+              disabled={!isConnected}
+              className="flex-grow rounded-lg border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={!isConnected || currentMessage.trim() === ""}
+              className="rounded-lg bg-blue-600 px-6 py-3 font-bold text-white transition-all hover:bg-blue-500 disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </form>
+
+        {/* File upload control */}
+        <div className="flex items-center gap-2">
+          <label className="cursor-pointer rounded-lg bg-gray-700 px-4 py-3 text-white">
+            📎
+            <input
+              type="file"
+              className="hidden"
+              onChange={(e) => uploadFile(e.target.files ? e.target.files[0] : null)}
+            />
+          </label>
+          <div className="flex flex-col">
+            {isUploading && <span className="text-sm text-gray-300">Uploading...</span>}
+            {/* Display upload errors in a modal instead of inline text */}
+          <Modal open={!!uploadError} title="Upload Error" message={uploadError ?? ""} onClose={() => setUploadError(null)} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

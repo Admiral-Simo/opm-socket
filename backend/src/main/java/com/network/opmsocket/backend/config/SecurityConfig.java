@@ -24,6 +24,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/ws/**").permitAll() // Allow connections to our WebSocket
+                        .requestMatchers("/uploads/**").permitAll() // allow public access to uploaded files
                         .anyRequest().authenticated()
                 );
 
@@ -42,6 +43,8 @@ public class SecurityConfig {
 
         source.registerCorsConfiguration("/api/**", configuration);
         source.registerCorsConfiguration("/ws/**", configuration); // <-- Also new
+        source.registerCorsConfiguration("/upload", configuration);
+        source.registerCorsConfiguration("/uploads/**", configuration);
 
         return source;
     }
