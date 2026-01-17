@@ -72,12 +72,10 @@
             <scope>annotationProcessor</scope>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/io.awspring.cloud/spring-cloud-aws-starter-s3 -->
         <dependency>
             <groupId>io.awspring.cloud</groupId>
             <artifactId>spring-cloud-aws-starter-s3</artifactId>
-            <version>4.0.0-RC1</version>
-            <scope>compile</scope>
+            <version>3.1.0</version>
         </dependency>
     </dependencies>
 

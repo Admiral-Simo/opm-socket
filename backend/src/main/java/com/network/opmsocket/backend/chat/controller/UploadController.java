@@ -1,5 +1,6 @@
 package com.network.opmsocket.backend.chat.controller;
 
+import com.network.opmsocket.backend.chat.service.S3Service;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RequestParam;
+import software.amazon.awssdk.services.s3.S3ServiceClientConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +20,11 @@ import java.util.*;
 
 @RestController
 public class UploadController {
+    private final S3Service s3Service;
 
+    public UploadController(S3Service s3Service) {
+        this.s3Service = s3Service;
+    }
     private static final Path UPLOAD_DIR = Paths.get("uploads");
     private static final long MAX_FILE_SIZE = 12L * 1024 * 1024; // 12 MB
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -39,8 +45,7 @@ public class UploadController {
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(
-            @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal JwtAuthenticationToken principal
+            @RequestParam("file") MultipartFile file
     ) throws IOException {
         // Ensure the user is authenticated by relying on SecurityConfig
 
@@ -57,35 +62,15 @@ public class UploadController {
             return ResponseEntity.badRequest().body(Map.of("error", "File type not allowed"));
         }
 
-        // create uploads directory if not exists
-        if (!Files.exists(UPLOAD_DIR)) {
-            Files.createDirectories(UPLOAD_DIR);
+        try {
+            String viewUrl = s3Service.uploadFile(file);
+            Map<String, String> response = new HashMap<>();
+            response.put("url", viewUrl);
+
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Upload failed"));
         }
-
-        String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String extension = "";
-        int dot = originalFilename.lastIndexOf('.');
-        if (dot >= 0) {
-            extension = originalFilename.substring(dot);
-        } else {
-            // fallback extension based on content type
-            extension = extensionForContentType(contentType);
-        }
-
-        // Generate a safe unique filename
-        String filename = UUID.randomUUID().toString() + extension;
-
-        Path target = UPLOAD_DIR.resolve(filename);
-        try (InputStream in = file.getInputStream()) {
-            Files.copy(in, target);
-        }
-
-        // Return the relative URL that clients can use
-        String url = "/uploads/" + filename;
-
-        Map<String, String> response = new HashMap<>();
-        response.put("url", url);
-        return ResponseEntity.ok(response);
     }
 
     private boolean isAllowedType(MultipartFile file, String contentType) {
@@ -173,24 +158,5 @@ public class UploadController {
         }
         double ratio = (double) printable / (double) read;
         return ratio > 0.9; // accept if >90% printable
-    }
-
-    private String extensionForContentType(String contentType) {
-        if (contentType == null) return "";
-        return switch (contentType) {
-            case "image/png" -> ".png";
-            case "image/jpeg" -> ".jpg";
-            case "image/gif" -> ".gif";
-            case "image/webp" -> ".webp";
-            case "application/pdf" -> ".pdf";
-            case "text/plain" -> ".txt";
-            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> ".docx";
-            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> ".xlsx";
-            case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> ".pptx";
-            case "application/msword" -> ".doc";
-            case "application/vnd.ms-excel" -> ".xls";
-            case "application/vnd.ms-powerpoint" -> ".ppt";
-            default -> "";
-        };
     }
 }

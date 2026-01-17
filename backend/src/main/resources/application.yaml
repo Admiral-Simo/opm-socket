@@ -1,4 +1,13 @@
 spring:
+  cloud:
+    aws:
+      s3:
+        bucket: opm-socket-chat-files
+      region:
+        static: eu-west-3
+      credentials:
+        profile:
+          name: my-dev-profile
   application:
     name: backend
   security:
@@ -21,8 +30,8 @@ spring:
       path: /h2-console
   servlet:
     multipart:
-      max-file-size: 2MB
-      max-request-size: 2MB
+      max-file-size: 12MB
+      max-request-size: 12MB
 
 server:
   port: 8080
