@@ -14,16 +14,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 public class UploadController {
 
     private static final Path UPLOAD_DIR = Paths.get("uploads");
-    private static final long MAX_FILE_SIZE = 1L * 1024 * 1024; // 1 MB
+    private static final long MAX_FILE_SIZE = 12L * 1024 * 1024; // 12 MB
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/png",
             "image/jpeg",
@@ -52,7 +49,7 @@ public class UploadController {
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            return ResponseEntity.badRequest().body(Map.of("error", "File too large. Max size is 1MB."));
+            return ResponseEntity.badRequest().body(Map.of("error", "File too large. Max size is 12MB."));
         }
 
         String contentType = file.getContentType();
@@ -65,7 +62,7 @@ public class UploadController {
             Files.createDirectories(UPLOAD_DIR);
         }
 
-        String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
+        String originalFilename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         String extension = "";
         int dot = originalFilename.lastIndexOf('.');
         if (dot >= 0) {
