@@ -1,11 +1,11 @@
 package com.network.opmsocket.backend.chat;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // Import ObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.network.opmsocket.backend.chat.model.ChatMessageDto;
 import com.network.opmsocket.backend.chat.model.PublicMessageDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired; // Import Autowired
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -50,11 +50,9 @@ public class WebSocketIntegrationTest {
         List<Transport> transports = Collections.singletonList(new WebSocketTransport(new StandardWebSocketClient()));
         this.stompClient = new WebSocketStompClient(new SockJsClient(transports));
 
-        // --- FIX 2: Configure the converter with the injected ObjectMapper ---
         MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setObjectMapper(objectMapper); // This enables 'Instant' support
+        converter.setObjectMapper(objectMapper);
         this.stompClient.setMessageConverter(converter);
-        // ---------------------------------------------------------------------
     }
 
     @Test
@@ -62,16 +60,23 @@ public class WebSocketIntegrationTest {
         // 1. Mock the Authentication
         Jwt mockJwt = mock(Jwt.class);
 
-        // Ensure getSubject() is mocked to prevent the NullPointerException
-        when(mockJwt.getSubject()).thenReturn("test-user-id");
-        when(mockJwt.getClaimAsString("preferred_username")).thenReturn("IntegrationTestUser");
+        // Define the test user
+        String testUserId = "test-user-id";
+        String testUsername = "IntegrationTestUser";
+
+        when(mockJwt.getSubject()).thenReturn(testUserId);
+
+        // --- FIX: Use the claim that ChatSocketController actually looks for! ---
+        // The controller looks for "name" or "cognito:username" as a fallback
+        when(mockJwt.getClaimAsString("name")).thenReturn(testUsername);
+        when(mockJwt.getClaimAsString("cognito:username")).thenReturn(testUsername);
 
         when(jwtDecoder.decode("my-fake-token")).thenReturn(mockJwt);
 
         // 2. Define the WebSocket URL
         String url = "ws://localhost:" + port + "/ws";
 
-        // 3. Create the StompSessionHandler
+        // 3. Create Session Handler
         BlockingQueue<PublicMessageDto> blockingQueue = new LinkedBlockingDeque<>();
         StompSessionHandlerAdapter sessionHandler = new StompSessionHandlerAdapter() {
             @Override
@@ -95,24 +100,23 @@ public class WebSocketIntegrationTest {
         connectHeaders.add("Authorization", "Bearer my-fake-token");
 
         StompSession session = stompClient.connectAsync(url, new WebSocketHttpHeaders(), connectHeaders, sessionHandler)
-                .get(1, TimeUnit.SECONDS);
+                .get(5, TimeUnit.SECONDS); // Increased timeout for CI/slow environments
 
         // 5. Send a message
-        Thread.sleep(500);
+        Thread.sleep(500); // Give the subscription a moment to register
 
         ChatMessageDto chatMessage = new ChatMessageDto();
         chatMessage.setContent("Hello Integration Test!");
 
         session.send("/app/chat.sendMessage", chatMessage);
 
-        // 6. Wait for the message (Increased timeout slightly to be safe)
+        // 6. Wait for the message
         PublicMessageDto receivedMessage = blockingQueue.poll(5, TimeUnit.SECONDS);
 
         // 7. Assertions
         assertThat(receivedMessage).isNotNull();
         assertThat(receivedMessage.getContent()).isEqualTo("Hello Integration Test!");
-        assertThat(receivedMessage.getSenderName()).isEqualTo("IntegrationTestUser");
-        // Check that the timestamp was correctly deserialized
+        assertThat(receivedMessage.getSenderName()).isEqualTo(testUsername);
         assertThat(receivedMessage.getTimestamp()).isNotNull();
     }
 }

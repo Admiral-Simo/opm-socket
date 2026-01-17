@@ -16,10 +16,16 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,6 +42,9 @@ public class SocialFeatureIntegrationTest {
 
     @Autowired
     private AppUserRepository appUserRepository;
+
+    @MockitoBean // Use @MockBean if @MockitoBean is not available in your version
+    private CognitoIdentityProviderClient cognitoClient;
 
     @Autowired
     private FriendshipRepository friendshipRepository;
@@ -56,6 +65,15 @@ public class SocialFeatureIntegrationTest {
 
     @Test
     public void testUserSync_ShouldSaveUserToDatabase() throws Exception {
+        // Setup Mocks
+        AdminGetUserResponse mockResponse = AdminGetUserResponse.builder()
+                .userAttributes(
+                        AttributeType.builder().name("name").value("simoo").build(),
+                        AttributeType.builder().name("email").value("simoo@test.com").build()
+                )
+                .build();
+
+        when(cognitoClient.adminGetUser(any(AdminGetUserRequest.class))).thenReturn(mockResponse);
         // 1. Call the Sync endpoint as "new-user"
         mockMvc.perform(post("/api/users/sync")
                         .with(jwt().jwt(jwt -> {

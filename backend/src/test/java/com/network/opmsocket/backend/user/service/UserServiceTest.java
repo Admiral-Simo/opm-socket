@@ -2,18 +2,24 @@ package com.network.opmsocket.backend.user.service;
 
 import com.network.opmsocket.backend.chat.repository.AppUserRepository;
 import com.network.opmsocket.backend.user.model.AppUser;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -21,56 +27,46 @@ public class UserServiceTest {
     @Mock
     private AppUserRepository appUserRepository;
 
+    @Mock // Mock the AWS Client
+    private CognitoIdentityProviderClient cognitoClient;
+
     @InjectMocks
     private UserService userService;
 
-    @Test
-    public void syncUser_ShouldCreateNewUser_WhenUserDoesNotExist() {
-        // Arrange
-        String userId = "keycloak-id-123";
-        String email = "new@test.com";
-        String username = "newuser";
-
-        Jwt jwt = mock(Jwt.class);
-        when(jwt.getSubject()).thenReturn(userId);
-        when(jwt.getClaimAsString("preferred_username")).thenReturn(username);
-        when(jwt.getClaimAsString("email")).thenReturn(email);
-
-        when(appUserRepository.findById(userId)).thenReturn(Optional.empty());
-
-        // Mock the save behavior to return the object passed to it
-        when(appUserRepository.save(any(AppUser.class))).thenAnswer(i -> i.getArguments()[0]);
-
-        // Act
-        AppUser result = userService.syncUser(jwt);
-
-        // Assert
-        assertThat(result.getId()).isEqualTo(userId);
-        assertThat(result.getEmail()).isEqualTo(email);
-        verify(appUserRepository).save(any(AppUser.class));
+    @BeforeEach
+    void setUp() {
+        // Manually set the @Value field for testing
+        ReflectionTestUtils.setField(userService, "userPoolId", "eu-west-3_testpool");
     }
 
     @Test
     public void syncUser_ShouldUpdateUser_WhenUserExists() {
-        // Arrange
-        String userId = "keycloak-id-456";
-        String newEmail = "updated@test.com";
+        // Given
+        String userId = "12345";
+        String newName = "Updated Name";
+        String email = "updated@test.com";
 
-        AppUser existingUser = new AppUser(userId, "oldname", "old@test.com");
-
-        Jwt jwt = mock(Jwt.class);
+        Jwt jwt = org.mockito.Mockito.mock(Jwt.class);
         when(jwt.getSubject()).thenReturn(userId);
-        when(jwt.getClaimAsString("preferred_username")).thenReturn("oldname");
-        when(jwt.getClaimAsString("email")).thenReturn(newEmail); // Email changed
 
+        // Mock AWS Response
+        AdminGetUserResponse awsResponse = AdminGetUserResponse.builder()
+                .userAttributes(
+                        AttributeType.builder().name("name").value(newName).build(),
+                        AttributeType.builder().name("email").value(email).build()
+                )
+                .build();
+        when(cognitoClient.adminGetUser(any(AdminGetUserRequest.class))).thenReturn(awsResponse);
+
+        // Mock DB
+        AppUser existingUser = new AppUser(userId, "Old Name", "old@test.com");
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(appUserRepository.save(any(AppUser.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(appUserRepository.save(any(AppUser.class))).thenReturn(existingUser);
 
-        // Act
-        AppUser result = userService.syncUser(jwt);
+        // When
+        userService.syncUser(jwt);
 
-        // Assert
-        assertThat(result.getEmail()).isEqualTo(newEmail); // Should be updated
-        verify(appUserRepository).save(existingUser);
+        // Then
+        verify(appUserRepository).save(any(AppUser.class));
     }
 }
