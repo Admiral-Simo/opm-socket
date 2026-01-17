@@ -1,19 +1,23 @@
 terraform {
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
       version = "6.28.0"
     }
   }
 }
 
 provider "aws" {
-    region = "eu-west-3"
+  region = "eu-west-3"
 }
 
-resource "aws_s3_bucket" "public_bucket" {
-    bucket = "opm-socket-chat-files"
+# -------------------------------------------------------------------
+# 1. S3 BUCKET
+# -------------------------------------------------------------------
 
+resource "aws_s3_bucket" "public_bucket" {
+  bucket        = "opm-socket-chat-files"
+  force_destroy = false
 }
 
 resource "aws_s3_bucket_public_access_block" "public_bucket_access_block" {
@@ -31,14 +35,8 @@ data "aws_iam_policy_document" "public_read_policy" {
       type        = "AWS"
       identifiers = ["*"]
     }
-
-    actions = [
-      "s3:GetObject",
-    ]
-
-    resources = [
-      "${aws_s3_bucket.public_bucket.arn}/*",
-    ]
+    actions = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.public_bucket.arn}/*"]
   }
 }
 
@@ -46,6 +44,10 @@ resource "aws_s3_bucket_policy" "public_bucket_policy" {
   bucket = aws_s3_bucket.public_bucket.id
   policy = data.aws_iam_policy_document.public_read_policy.json
 }
+
+# -------------------------------------------------------------------
+# 2. COGNITO USER POOL
+# -------------------------------------------------------------------
 
 resource "aws_cognito_user_pool" "main" {
   name = "opm-socket-user-pool"
@@ -55,10 +57,6 @@ resource "aws_cognito_user_pool" "main" {
 
   password_policy {
     minimum_length    = 8
-    require_lowercase = true
-    require_numbers   = true
-    require_symbols   = true
-    require_uppercase = true
   }
 
   verification_message_template {
@@ -66,12 +64,29 @@ resource "aws_cognito_user_pool" "main" {
     email_subject        = "Account Confirmation"
     email_message        = "Your confirmation code is {####}"
   }
+
+  # --- REQUIRED: Setting this to TRUE makes it appear on the form ---
+  schema {
+    attribute_data_type = "String"
+    name                = "name"
+    required            = true
+    mutable             = true
+
+    string_attribute_constraints {
+      min_length = 2
+      max_length = 2048
+    }
+  }
 }
+
+# -------------------------------------------------------------------
+# 3. COGNITO APP CLIENT
+# -------------------------------------------------------------------
 
 resource "aws_cognito_user_pool_client" "client" {
   name = "nextjs-chat-client"
 
-  user_pool_id = aws_cognito_user_pool.main.id
+  user_pool_id    = aws_cognito_user_pool.main.id
   generate_secret = true
 
   supported_identity_providers = ["COGNITO"]
@@ -80,20 +95,95 @@ resource "aws_cognito_user_pool_client" "client" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
 
+  read_attributes  = ["email", "email_verified", "name", "profile", "updated_at"]
+  write_attributes = ["email", "name", "profile"]
+
   callback_urls = [
     "http://localhost:3000/api/auth/callback/cognito",
     "http://127.0.0.1:3000/api/auth/callback/cognito"
   ]
 
-  logout_urls   = ["http://localhost:3000", "http://127.0.0.1:3000"]
+  logout_urls = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+  ]
 
   default_redirect_uri = "http://localhost:3000/api/auth/callback/cognito"
 }
+
+# -------------------------------------------------------------------
+# 4. HOSTED UI DOMAIN
+# -------------------------------------------------------------------
 
 resource "aws_cognito_user_pool_domain" "main" {
   domain       = "opm-socket-auth-unique-123"
   user_pool_id = aws_cognito_user_pool.main.id
 }
+
+# -------------------------------------------------------------------
+# 5. UI CUSTOMIZATION (Professional Style)
+# -------------------------------------------------------------------
+
+resource "aws_cognito_user_pool_ui_customization" "ui" {
+  user_pool_id = aws_cognito_user_pool.main.id
+  client_id    = aws_cognito_user_pool_client.client.id
+
+  depends_on = [
+    aws_cognito_user_pool_domain.main
+  ]
+
+  # Only verified, allowed classes
+  css = <<EOF
+    /* 1. Primary Button */
+    .submitButton-customizable {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 8px !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      text-transform: none !important;
+      padding: 14px 24px !important;
+      width: 100% !important;
+      margin-top: 20px !important;
+    }
+
+    .submitButton-customizable:hover {
+      background-color: #1d4ed8 !important;
+    }
+
+    /* 2. Input Fields */
+    .inputField-customizable {
+      border: 1px solid #e5e7eb !important;
+      border-radius: 8px !important;
+      padding: 12px 16px !important;
+      font-size: 15px !important;
+      color: #1f2937 !important;
+      background-color: #f9fafb !important;
+      width: 100% !important;
+      height: 48px !important;
+      margin-bottom: 15px !important;
+    }
+
+    .inputField-customizable:focus {
+      border-color: #2563eb !important;
+      background-color: #ffffff !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+      outline: none !important;
+    }
+
+    /* 3. Labels */
+    .label-customizable {
+      font-weight: 500 !important;
+      color: #374151 !important;
+      margin-bottom: 8px !important;
+    }
+  EOF
+}
+
+# -------------------------------------------------------------------
+# 6. OUTPUTS
+# -------------------------------------------------------------------
 
 output "cognito_user_pool_id" {
   value = aws_cognito_user_pool.main.id
@@ -114,46 +204,4 @@ output "cognito_issuer" {
 
 output "cognito_domain" {
   value = "https://${aws_cognito_user_pool_domain.main.domain}.auth.eu-west-3.amazoncognito.com"
-}
-
-resource "aws_cognito_user_pool_ui_customization" "ui" {
-  user_pool_id = aws_cognito_user_pool.main.id
-  client_id    = aws_cognito_user_pool_client.client.id
-
-  css = <<EOF
-    /* Background styling */
-    .submitButton-customizable {
-      background-color: #2563eb !important; /* Tailwind Blue-600 */
-      border-radius: 6px !important;
-      border: none !important;
-      font-weight: bold !important;
-      text-transform: uppercase !important;
-    }
-    .submitButton-customizable:hover {
-      background-color: #1d4ed8 !important; /* Tailwind Blue-700 */
-    }
-
-    /* Input fields */
-    .inputField-customizable {
-      border-radius: 6px !important;
-      border: 1px solid #d1d5db !important;
-      padding: 10px !important;
-    }
-    .inputField-customizable:focus {
-      border-color: #2563eb !important;
-      box-shadow: 0 0 0 1px #2563eb !important;
-    }
-
-    /* Form container */
-    .modal-content-customizable {
-      border-radius: 12px !important;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    /* Header text */
-    .header-customizable {
-      font-family: 'Inter', sans-serif !important;
-      font-weight: 700 !important;
-    }
-  EOF
 }
