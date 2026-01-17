@@ -46,3 +46,64 @@ resource "aws_s3_bucket_policy" "public_bucket_policy" {
   bucket = aws_s3_bucket.public_bucket.id
   policy = data.aws_iam_policy_document.public_read_policy.json
 }
+
+resource "aws_cognito_user_pool" "main" {
+  name = "opm-socket-user-pool"
+
+  username_attributes      = ["email"]
+  auto_verified_attributes = ["email"]
+
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = true
+    require_uppercase = true
+  }
+
+  verification_message_template {
+    default_email_option = "CONFIRM_WITH_CODE"
+    email_subject        = "Account Confirmation"
+    email_message        = "Your confirmation code is {####}"
+  }
+}
+
+resource "aws_cognito_user_pool_client" "client" {
+  name = "nextjs-chat-client"
+
+  user_pool_id = aws_cognito_user_pool.main.id
+  generate_secret = true
+
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+
+  callback_urls = ["http://localhost:3000/api/auth/callback/cognito"]
+  logout_urls   = ["http://localhost:3000"]
+}
+
+resource "aws_cognito_user_pool_domain" "main" {
+  domain       = "opm-socket-auth-unique-123"
+  user_pool_id = aws_cognito_user_pool.main.id
+}
+
+output "cognito_user_pool_id" {
+  value = aws_cognito_user_pool.main.id
+}
+
+output "cognito_client_id" {
+  value = aws_cognito_user_pool_client.client.id
+}
+
+output "cognito_client_secret" {
+  value     = aws_cognito_user_pool_client.client.client_secret
+  sensitive = true
+}
+
+output "cognito_issuer" {
+  value = "https://cognito-idp.eu-west-3.amazonaws.com/${aws_cognito_user_pool.main.id}"
+}
+
+output "cognito_domain" {
+  value = "https://${aws_cognito_user_pool_domain.main.domain}.auth.eu-west-3.amazoncognito.com"
+}
