@@ -1,6 +1,6 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
-import KeycloakProvider from "next-auth/providers/keycloak";
+import CognitoProvider from "next-auth/providers/cognito";
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
@@ -8,17 +8,21 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       throw new Error("No refresh token available");
     }
 
-    const url = `${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`;
+    const url = `${process.env.COGNITO_DOMAIN}/oauth2/token`;
 
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        Authorization:
+          "Basic " +
+          Buffer.from(
+            `${process.env.COGNITO_CLIENT_ID}:${process.env.COGNITO_CLIENT_SECRET}`,
+          ).toString("base64"),
       },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        client_id: process.env.KEYCLOAK_CLIENT_ID!,
-        client_secret: process.env.KEYCLOAK_CLIENT_SECRET!,
+        client_id: process.env.COGNITO_CLIENT_ID!,
         refresh_token: token.refreshToken as string,
       }),
     });
@@ -27,7 +31,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
     if (!response.ok) {
       throw new Error(
-        `Token refresh failed: ${refreshedTokens.error_description}`,
+        `Token refresh failed: ${refreshedTokens.error_description || "Unknown error"}`,
       );
     }
 
@@ -48,15 +52,11 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
 
 export const authOptions: AuthOptions = {
   providers: [
-    KeycloakProvider({
-      clientId: process.env.KEYCLOAK_CLIENT_ID!,
-      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET!,
-      issuer: process.env.KEYCLOAK_ISSUER!,
-      authorization: {
-        params: {
-          scope: "openid profile email offline_access",
-        },
-      },
+    CognitoProvider({
+      clientId: process.env.COGNITO_CLIENT_ID!,
+      clientSecret: process.env.COGNITO_CLIENT_SECRET!,
+      issuer: process.env.COGNITO_ISSUER!,
+      checks: ["pkce", "state"],
     }),
   ],
 

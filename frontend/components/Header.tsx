@@ -22,7 +22,7 @@ export default function Header() {
 
         {status === "unauthenticated" && (
           <button
-            onClick={() => signIn("keycloak")}
+            onClick={() => signIn("cognito")}
             className="rounded bg-blue-600 px-5 py-2 font-bold text-white transition-all hover:bg-blue-500"
           >
             Sign In

@@ -69,7 +69,7 @@ export default function Home() {
                 <LockClosedIcon className="h-8 w-8" />
               </div>
               <h3 className="mb-3 text-2xl font-semibold text-white">
-                Powered by Keycloak
+                Powered by Cognito
               </h3>
               <p className="text-gray-400">
                 State-of-the-art Identity and Access Management ensures your
@@ -100,7 +100,7 @@ export default function Home() {
               WebSockets (STOMP)
             </span>
             <span className="rounded-full bg-gray-700 px-5 py-2 text-sm font-medium text-white">
-              Keycloak
+              Cognito
             </span>
             <span className="rounded-full bg-gray-700 px-5 py-2 text-sm font-medium text-white">
               Redux Toolkit
