@@ -1,6 +1,8 @@
 spring:
   cloud:
     aws:
+      cognito:
+        user-pool-id: eu-west-3_Pgw4xrkGe
       s3:
         bucket: opm-socket-chat-files
       region:
