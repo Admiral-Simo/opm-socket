@@ -28,7 +28,7 @@ public class S3Service {
     public String uploadFile(MultipartFile file) throws IOException {
         // 1. Generate a unique key (e.g., "chat-images/uuid-originalFilename")
         // This prevents users from overwriting each other's files.
-        String key = "chat-uploads/" +  file.getOriginalFilename() + "-" + UUID.randomUUID() ;
+        String key = "chat-uploads/" +  UUID.randomUUID() + "-"  + file.getOriginalFilename() ;
 
         // 2. Upload the file stream to S3
         try (InputStream inputStream = file.getInputStream()) {
