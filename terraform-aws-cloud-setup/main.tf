@@ -115,3 +115,45 @@ output "cognito_issuer" {
 output "cognito_domain" {
   value = "https://${aws_cognito_user_pool_domain.main.domain}.auth.eu-west-3.amazoncognito.com"
 }
+
+resource "aws_cognito_user_pool_ui_customization" "ui" {
+  user_pool_id = aws_cognito_user_pool.main.id
+  client_id    = aws_cognito_user_pool_client.client.id
+
+  css = <<EOF
+    /* Background styling */
+    .submitButton-customizable {
+      background-color: #2563eb !important; /* Tailwind Blue-600 */
+      border-radius: 6px !important;
+      border: none !important;
+      font-weight: bold !important;
+      text-transform: uppercase !important;
+    }
+    .submitButton-customizable:hover {
+      background-color: #1d4ed8 !important; /* Tailwind Blue-700 */
+    }
+
+    /* Input fields */
+    .inputField-customizable {
+      border-radius: 6px !important;
+      border: 1px solid #d1d5db !important;
+      padding: 10px !important;
+    }
+    .inputField-customizable:focus {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 1px #2563eb !important;
+    }
+
+    /* Form container */
+    .modal-content-customizable {
+      border-radius: 12px !important;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Header text */
+    .header-customizable {
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 700 !important;
+    }
+  EOF
+}
